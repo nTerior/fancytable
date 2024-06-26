@@ -73,7 +73,7 @@ impl FancyTable {
     }
 
     /// Adds a number of columns.
-    /// The columns will be filled with default [FancyCells]s
+    /// The columns will be filled with default [FancyCell]s
     ///
     /// # Important
     /// If this function is called AND the table is empty, an empty row will be added.
