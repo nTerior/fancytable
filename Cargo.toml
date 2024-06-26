@@ -1,0 +1,12 @@
+[package]
+name = "fancytable"
+version = "0.1.0"
+edition = "2021"
+readme = "README.md"
+description = "Create customizable and pretty tables for terminal output"
+
+[dependencies]
+ansi_term = "0.12.1"
+textwrap = "0.16.1"
+unicode-width = "0.1.13"
+
