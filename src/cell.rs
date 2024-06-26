@@ -6,8 +6,8 @@ fn multiline_from_string(s: String) -> Vec<String> {
     s.lines().map(String::from).collect()
 }
 
-/// A single, stylizable cell used inside [FancyTable]
-#[derive(Debug, Eq, PartialEq, Default)]
+/// A single, stylizable cell used inside [FancyTable](crate::FancyTable)
+#[derive(Debug, Eq, PartialEq, Default, Clone)]
 pub struct FancyCell {
     content: Vec<String>,
 }
