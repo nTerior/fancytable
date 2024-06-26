@@ -101,4 +101,44 @@ impl FancyTable {
             }
         }
     }
+
+    /// Sets the cell at a specified position starting at (0, 0)
+    /// Will create rows and columns dynamically if needed.
+    ///
+    /// Returns whether rows or columns have been created
+    ///
+    /// # Example
+    /// ```
+    /// use fancytable::FancyTable;
+    /// let mut table = FancyTable::default(); // Empty table
+    /// table.set(5, 5, "Hello World".into()); // creates 6 rows and 6 columns
+    /// ```
+    pub fn set(&mut self, row_idx: usize, col_idx: usize, cell: FancyCell) -> bool {
+        let mut edited = false;
+        if row_idx >= self.cells.len() {
+            self.add_rows(row_idx - self.cells.len() + 1);
+            edited = true;
+        }
+        if col_idx >= self.cells[row_idx].len() {
+            self.add_columns(col_idx - self.cells[row_idx].len() + 1);
+            edited = true;
+        }
+
+        self.cells[row_idx][col_idx] = cell;
+        edited
+    }
+
+    /// Returns a reference to the [FancyCell] at the position (row_idx, col_idx) in the table
+    /// Returns None if not found
+    pub fn get(&self, row_idx: usize, col_idx: usize) -> Option<&FancyCell> {
+        let row = self.cells.get(row_idx)?;
+        row.get(col_idx)
+    }
+
+    /// Returns a mutable reference to the [FancyCell] at the position (row_idx, col_idx) in the table
+    /// Returns None if not found
+    pub fn get_mut(&mut self, row_idx: usize, col_idx: usize) -> Option<&mut FancyCell> {
+        let row = self.cells.get_mut(row_idx)?;
+        row.get_mut(col_idx)
+    }
 }
