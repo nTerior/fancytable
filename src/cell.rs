@@ -1,5 +1,6 @@
 use std::str::FromStr;
 use unicode_width::UnicodeWidthStr;
+use crate::style::border::{CellBorderStyle};
 
 /// Splits the input into separate lines and returns them inside a [Vec]
 fn multiline_from_string(s: String) -> Vec<String> {
@@ -10,6 +11,7 @@ fn multiline_from_string(s: String) -> Vec<String> {
 #[derive(Debug, Eq, PartialEq, Default, Clone)]
 pub struct FancyCell {
     content: Vec<String>,
+    pub border_style: CellBorderStyle,
 }
 
 impl FancyCell {
@@ -33,6 +35,7 @@ impl FancyCell {
     pub fn new(content: String) -> FancyCell {
         FancyCell {
             content: multiline_from_string(content),
+            border_style: CellBorderStyle::default(),
         }
     }
 

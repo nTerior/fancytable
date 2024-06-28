@@ -1,4 +1,5 @@
 use crate::FancyCell;
+use crate::style::border::{BorderStyle, TableOutline};
 
 /// A stylizable, rectangular table for pretty cli output.
 #[derive(Debug, Eq, PartialEq, Default)]
@@ -8,6 +9,9 @@ pub struct FancyTable {
     /// Set when adding a column to an empty table, so that a call on [FancyTable::add_rows] creates the correct result
     /// ONLY FOR INTERNAL USE!
     _added_column_first: bool,
+    vertical_separator_styles: Vec<BorderStyle>,
+    horizontal_separator_styles: Vec<BorderStyle>,
+    pub outline: TableOutline,
 }
 
 impl FancyTable {
@@ -32,7 +36,7 @@ impl FancyTable {
             .collect();
 
         // gets the maximum number of columns in all rows
-        let max_columns = cells.iter()
+        let columns = cells.iter()
             .map(|row| row.len())
             .max()
             .unwrap_or(0);
@@ -40,16 +44,29 @@ impl FancyTable {
         // fills every row to the maximum number of columns
         // therefore, the table is now a rectangle
         for row in &mut cells {
-            if row.len() < max_columns {
-                for _ in 0..(max_columns - row.len()) {
+            if row.len() < columns {
+                for _ in 0..(columns - row.len()) {
                     row.push(FancyCell::default());
                 }
             }
         }
 
+        let mut vertical_separators: usize = 0;
+        if columns > 1 {
+            vertical_separators = columns - 1;
+        }
+
+        let mut horizontal_separators: usize = 0;
+        if cells.len() > 1 {
+            horizontal_separators = cells.len() - 1;
+        }
+
         FancyTable {
-            cells,
+            vertical_separator_styles: vec![BorderStyle::default(); vertical_separators],
+            horizontal_separator_styles: vec![BorderStyle::default(); horizontal_separators],
             _added_column_first: false,
+            outline: TableOutline::default(),
+            cells,
         }
     }
 
@@ -69,6 +86,7 @@ impl FancyTable {
         let cols = self.cells.get(0).unwrap_or(&vec![].into()).len();
         for _ in 0..rows {
             self.cells.push(vec![FancyCell::default(); cols]);
+            self.horizontal_separator_styles.push(BorderStyle::default());
         }
     }
 
@@ -95,10 +113,11 @@ impl FancyTable {
             self._added_column_first = true;
         }
 
-        for row in &mut self.cells {
-            for _ in 0..n {
+        for _ in 0..n {
+            for row in &mut self.cells {
                 row.push(FancyCell::default());
             }
+            self.vertical_separator_styles.push(BorderStyle::default());
         }
     }
 
@@ -140,5 +159,29 @@ impl FancyTable {
     pub fn get_mut(&mut self, row_idx: usize, col_idx: usize) -> Option<&mut FancyCell> {
         let row = self.cells.get_mut(row_idx)?;
         row.get_mut(col_idx)
+    }
+
+    /// Returns the amount of rows currently in the table
+    pub fn get_row_count(&self) -> usize {
+        self.cells.len()
+    }
+
+    /// Returns the amount of columns currently in the table
+    pub fn get_column_count(&self) -> usize {
+        if self.cells.len() != 0 {
+            // since the table is always rectangular, this will always work
+            return self.cells[0].len();
+        }
+        0
+    }
+
+    /// Returns the style for a single vertical separator.
+    pub fn get_vertical_separator_style(&self, idx: usize) -> Option<&BorderStyle> {
+        self.vertical_separator_styles.get(idx)
+    }
+
+    /// Returns the style for a single horizontal separator.
+    pub fn get_horizontal_separator_style(&self, idx: usize) -> Option<&BorderStyle> {
+        self.horizontal_separator_styles.get(idx)
     }
 }
