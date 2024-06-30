@@ -102,3 +102,76 @@ fn get_border_symbol(cell: &FancyCell, adjacent: Option<&FancyCell>, table_outli
         (_, BorderStyle::Double) => charset[1].clone(),
     }
 }
+
+fn style_based_selection(hor_style: BorderStyle, vert_style: BorderStyle, ss: &str, ds: &str, sd: &str, dd: &str) -> String {
+    match (hor_style, vert_style) {
+        (BorderStyle::Single, BorderStyle::Single) => ss,
+        (BorderStyle::Double, BorderStyle::Single) => ds,
+        (BorderStyle::Single, BorderStyle::Double) => sd,
+        (BorderStyle::Double, BorderStyle::Double) => dd,
+    }.into()
+}
+
+fn get_center_symbol(top: bool, left: bool, right: bool, bottom: bool, hor_style: BorderStyle, vert_style: BorderStyle) -> String {
+    match (top, left, right, bottom) {
+        // none
+        (false, false, false, false) => " ".into(),
+        // cross (┼)
+        (true, true, true, true) => style_based_selection(hor_style, vert_style, "┼", "╪", "╫", "╬"),
+        // top t (┬)
+        (false, true, true, true) => style_based_selection(hor_style, vert_style, "┬", "╤", "╥", "╦"),
+        // bottom t (┴)
+        (true, true, true, false) => style_based_selection(hor_style, vert_style, "┴", "╧", "╨", "╩"),
+        // left t (├)
+        (true, false, true, true) => style_based_selection(hor_style, vert_style, "├", "╞", "╨", "╟"),
+        // right t (┤)
+        (true, true, false, true) => style_based_selection(hor_style, vert_style, "┤", "╡", "╢", "╣"),
+        // horizontal line (─)
+        (true, false, false, true) => if hor_style == BorderStyle::Single { "─" } else { "═" }.into(),
+        // vertical line (│)
+        (false, true, true, false) => if vert_style == BorderStyle::Single { "│" } else { "║" }.into(),
+        // corner (┌)
+        (false, false, true, true) => style_based_selection(hor_style, vert_style, "┌", "╒", "╓", "╔"),
+        // corner (┐)
+        (false, true, false, true) => style_based_selection(hor_style, vert_style, "┐", "╕", "╖", "╗"),
+        // corner (└)
+        (true, false, true, false) => style_based_selection(hor_style, vert_style, "└", "╘", "╙", "╚"),
+        // corner (┘)
+        (true, true, false, false) => style_based_selection(hor_style, vert_style, "┘", "╛", "╜", "╝"),
+        // single top border
+        (true, false, false, false) => if vert_style == BorderStyle::Single { "╵" } else { "║" }.into(),
+        // single left border
+        (false, true, false, false) => if hor_style == BorderStyle::Single { "╴" } else { "═" }.into(),
+        // single right border
+        (false, false, true, false) => if hor_style == BorderStyle::Single { "╶" } else { "═" }.into(),
+        // single bottom border
+        (false, false, false, true) => if vert_style == BorderStyle::Single { "╷" } else { "║" }.into(),
+    }
+}
+
+pub fn get_common_cell_border_symbol(table: &FancyTable, top_left: Option<&FancyCell>, top_right: Option<&FancyCell>, bottom_left: Option<&FancyCell>, bottom_right: Option<&FancyCell>, hor_style: BorderStyle, vert_style: BorderStyle) -> String {
+    assert!(table.get_row_count() > 0);
+    assert!(table.get_column_count() > 0);
+
+    let top = match (top_left, top_right) {
+        (Some(left), Some(right)) => left.border_style.right.max(right.border_style.left) != BorderLineStyle::None,
+        _ => false,
+    };
+
+    let left = match (top_left, bottom_right) {
+        (Some(top), Some(bot)) => top.border_style.bottom.max(bot.border_style.top) != BorderLineStyle::None,
+        _ => false,
+    };
+
+    let right = match (top_right, bottom_right) {
+        (Some(top), Some(bot)) => top.border_style.bottom.max(bot.border_style.top) != BorderLineStyle::None,
+        _ => false,
+    };
+
+    let bottom = match (bottom_left, bottom_right) {
+        (Some(left), Some(right)) => left.border_style.right.max(right.border_style.left) != BorderLineStyle::None,
+        _ => false,
+    };
+
+    get_center_symbol(top, left, right, bottom, hor_style, vert_style)
+}
