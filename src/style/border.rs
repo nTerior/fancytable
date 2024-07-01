@@ -38,49 +38,50 @@ pub struct CellBorderStyle {
     pub bottom: BorderLineStyle,
 }
 
-/// Returns the vertical cell-cell separator.
-/// If there is no cell at (row_idx, col_idx), this function panics.
-pub fn get_right_cell_separator(table: &FancyTable, row_idx: usize, col_idx: usize) -> String {
-    let cell = table.get(row_idx, col_idx)
-        .expect(format!("There is no cell at ({},{})", row_idx, col_idx).as_str());
-    // right neighbour
-    let adjacent = table.get(row_idx, col_idx + 1);
-
-    get_border_symbol(cell,
-                      adjacent,
-                      table.get_vertical_separator_style(row_idx + 1),
-                      |cell, adj| cell.border_style.right.max(adj.border_style.left),
-                      ["│", "║", "╵", "┆"].map(String::from))
+fn get_horizontal_symbol(line: &BorderLineStyle, style: &BorderStyle) -> String {
+    match (line, style) {
+        (BorderLineStyle::Solid, BorderStyle::Single) => "─",
+        (BorderLineStyle::Dashed, BorderStyle::Single) => "╴",
+        (BorderLineStyle::Dotted, BorderStyle::Single) => "┄",
+        (BorderLineStyle::None, _) => " ",
+        (_, BorderStyle::Double) => "═",
+    }.to_string()
 }
 
-
-/// Returns the horizontal cell-cell separator.
-/// If there is no cell at (row_idx, col_idx), this function panics.
-pub fn get_bottom_cell_separator(table: &FancyTable, row_idx: usize, col_idx: usize) -> String {
-    let cell = table.get(row_idx, col_idx)
-        .expect(format!("There is no cell at ({},{})", row_idx, col_idx).as_str());
-    // right neighbour
-    let adjacent = table.get(row_idx + 1, col_idx);
-
-    get_border_symbol(cell,
-                      adjacent,
-                      table.get_horizontal_separator_style(col_idx + 1),
-                      |cell, adj| cell.border_style.bottom.max(adj.border_style.top),
-                      ["─", "═", "╴", "┄"].map(String::from))
+fn get_vertical_symbol(line: &BorderLineStyle, style: &BorderStyle) -> String {
+    match (line, style) {
+        (BorderLineStyle::Solid, BorderStyle::Single) => "│",
+        (BorderLineStyle::Dashed, BorderStyle::Single) => "╵",
+        (BorderLineStyle::Dotted, BorderStyle::Single) => "┆",
+        (BorderLineStyle::None, _) => " ",
+        (_, BorderStyle::Double) => "║",
+    }.to_string()
 }
 
-/// Usage: [single solid, double solid, single dashed, single dotted]
-type Charset = [String; 4];
+pub fn get_cell_border_symbols(table: &FancyTable, cell_row: usize, cell_col: usize) -> (String, String, String, String) {
+    let cell = table.get(cell_row, cell_col).unwrap_or(&FancyCell::default());
+    let top = match cell_row - 1 {
+        i if i < 0 => None,
+        i => table.get(i, cell_col),
+    }.unwrap_or(&FancyCell::default());
+    let left = match cell_col - 1 {
+        i if i < 0 => None,
+        i => table.get(cell_row, i),
+    }.unwrap_or(&FancyCell::default());
+    let right = table.get(cell_row, cell_col + 1).unwrap_or(&FancyCell::default());
+    let bottom = table.get(cell_row + 1, cell_col).unwrap_or(&FancyCell::default());
 
-fn get_border_symbol(cell: &FancyCell, adjacent: Option<&FancyCell>, table_line_style: &BorderStyle, get_line_style: fn(&FancyCell, &FancyCell) -> BorderLineStyle, charset: Charset) -> String {
-    let line_style = get_line_style(cell, adjacent.unwrap_or(&FancyCell::default()));
-    match (line_style, table_line_style) {
-        (BorderLineStyle::Solid, BorderStyle::Single) => charset[0].clone(),
-        (BorderLineStyle::Dashed, BorderStyle::Single) => charset[2].clone(),
-        (BorderLineStyle::Dotted, BorderStyle::Single) => charset[3].clone(),
-        (BorderLineStyle::None, _) => " ".into(),
-        (_, BorderStyle::Double) => charset[1].clone(),
-    }
+    let top_hor_style = table.get_horizontal_separator_style(cell_row);
+    let bottom_hor_style = table.get_horizontal_separator_style(cell_row + 1);
+    let left_vert_style = table.get_vertical_separator_style(cell_col);
+    let right_vert_style = table.get_vertical_separator_style(cell_col + 1);
+
+    let top_symbol = get_horizontal_symbol(&cell.border_style.top.max(top.border_style.bottom), top_hor_style);
+    let bottom_symbol = get_horizontal_symbol(&cell.border_style.bottom.max(bottom.border_style.top), bottom_hor_style);
+    let left_symbol = get_vertical_symbol(&cell.border_style.left.max(left.border_style.right), left_vert_style);
+    let right_symbol = get_vertical_symbol(&cell.border_style.right.max(right.border_style.left), right_vert_style);
+
+    (top_symbol, left_symbol, right_symbol, bottom_symbol)
 }
 
 fn style_based_selection(hor_style: BorderStyle, vert_style: BorderStyle, ss: &str, ds: &str, sd: &str, dd: &str) -> String {
