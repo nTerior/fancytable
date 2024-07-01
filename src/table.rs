@@ -175,13 +175,23 @@ impl FancyTable {
         0
     }
 
-    /// Returns the style for a single vertical separator.
+    /// Returns the style for a single vertical separator (not the outline)
     pub fn get_vertical_separator_style(&self, idx: usize) -> Option<&BorderStyle> {
         self.vertical_separator_styles.get(idx)
     }
 
-    /// Returns the style for a single horizontal separator.
+    /// Returns the style for a single horizontal separator (not the outline)
     pub fn get_horizontal_separator_style(&self, idx: usize) -> Option<&BorderStyle> {
         self.horizontal_separator_styles.get(idx)
+    }
+
+    /// Sets the style for a vertical separator (not the outline).
+    pub fn set_vertical_separator_style(&mut self, idx: usize, style: BorderStyle) {
+        self.vertical_separator_styles[idx] = style;
+    }
+
+    /// Sets the style for a horizontal separator (not the outline).
+    pub fn set_horizontal_separator_style(&mut self, idx: usize, style: BorderStyle) {
+        self.horizontal_separator_styles[idx] = style;
     }
 }
