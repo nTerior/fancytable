@@ -149,10 +149,7 @@ fn get_center_symbol(top: bool, left: bool, right: bool, bottom: bool, hor_style
     }
 }
 
-pub fn get_common_cell_border_symbol(table: &FancyTable, top_left: Option<&FancyCell>, top_right: Option<&FancyCell>, bottom_left: Option<&FancyCell>, bottom_right: Option<&FancyCell>, hor_style: BorderStyle, vert_style: BorderStyle) -> String {
-    assert!(table.get_row_count() > 0);
-    assert!(table.get_column_count() > 0);
-
+pub fn get_common_cell_border_symbol(top_left: Option<&FancyCell>, top_right: Option<&FancyCell>, bottom_left: Option<&FancyCell>, bottom_right: Option<&FancyCell>, hor_style: BorderStyle, vert_style: BorderStyle) -> String {
     let top = match (top_left, top_right) {
         (Some(left), Some(right)) => left.border_style.right.max(right.border_style.left) != BorderLineStyle::None,
         _ => false,
