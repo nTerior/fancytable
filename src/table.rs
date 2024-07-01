@@ -1,5 +1,6 @@
+use std::cmp::max;
 use crate::FancyCell;
-use crate::style::border::{BorderStyle, TableOutline};
+use crate::style::border::BorderStyle;
 
 /// A stylizable, rectangular table for pretty cli output.
 #[derive(Debug, Eq, PartialEq, Default)]
@@ -9,9 +10,10 @@ pub struct FancyTable {
     /// Set when adding a column to an empty table, so that a call on [FancyTable::add_rows] creates the correct result
     /// ONLY FOR INTERNAL USE!
     _added_column_first: bool,
+    /// The vertical separators + borders
     vertical_separator_styles: Vec<BorderStyle>,
+    /// The horizontal separators + border
     horizontal_separator_styles: Vec<BorderStyle>,
-    pub outline: TableOutline,
 }
 
 impl FancyTable {
@@ -51,21 +53,13 @@ impl FancyTable {
             }
         }
 
-        let mut vertical_separators: usize = 0;
-        if columns > 1 {
-            vertical_separators = columns - 1;
-        }
-
-        let mut horizontal_separators: usize = 0;
-        if cells.len() > 1 {
-            horizontal_separators = cells.len() - 1;
-        }
+        let vertical_separators: usize = max(columns + 1, 2);
+        let horizontal_separators: usize = max(cells.len() + 1, 2);
 
         FancyTable {
             vertical_separator_styles: vec![BorderStyle::default(); vertical_separators],
             horizontal_separator_styles: vec![BorderStyle::default(); horizontal_separators],
             _added_column_first: false,
-            outline: TableOutline::default(),
             cells,
         }
     }
@@ -176,13 +170,13 @@ impl FancyTable {
     }
 
     /// Returns the style for a single vertical separator (not the outline)
-    pub fn get_vertical_separator_style(&self, idx: usize) -> Option<&BorderStyle> {
-        self.vertical_separator_styles.get(idx)
+    pub fn get_vertical_separator_style(&self, idx: usize) -> &BorderStyle {
+        &self.vertical_separator_styles[idx]
     }
 
     /// Returns the style for a single horizontal separator (not the outline)
-    pub fn get_horizontal_separator_style(&self, idx: usize) -> Option<&BorderStyle> {
-        self.horizontal_separator_styles.get(idx)
+    pub fn get_horizontal_separator_style(&self, idx: usize) -> &BorderStyle {
+        &self.horizontal_separator_styles[idx]
     }
 
     /// Sets the style for a vertical separator (not the outline).
