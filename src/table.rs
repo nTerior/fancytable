@@ -195,3 +195,20 @@ impl FancyTable {
         self.horizontal_separator_styles[idx] = style;
     }
 }
+
+impl FancyTable {
+    fn get_col_widths(&self) -> Vec<usize> {
+        let columns = self.get_column_count();
+        let mut widths = Vec::with_capacity(columns);
+
+        for i in 0..columns {
+            let width = self.cells.iter()
+                .map(|row| row[i].get_width())
+                .max()
+                .unwrap_or(0);
+            widths.push(width);
+        }
+
+        widths
+    }
+}
