@@ -12,6 +12,7 @@ fn multiline_from_string(s: String) -> Vec<String> {
 pub struct FancyCell {
     content: Vec<String>,
     pub border_style: CellBorderStyle,
+    pub padding: usize,
 }
 
 impl FancyCell {
@@ -35,7 +36,7 @@ impl FancyCell {
     pub fn new(content: String) -> FancyCell {
         FancyCell {
             content: multiline_from_string(content),
-            border_style: CellBorderStyle::default(),
+            ..Self::default()
         }
     }
 
@@ -57,8 +58,10 @@ impl FancyCell {
     /// Returns a single line inside this cell.
     ///
     /// Returns [None] if the line does not exist.
-    pub fn get_line(&self, line: usize) -> Option<&String> {
-        self.content.get(line)
+    pub fn get_line(&self, line: usize) -> Option<String> {
+        let line = self.content.get(line)?;
+        let empty = "";
+        Some(format!("{empty:width$}{line}{empty:width$}", width=self.padding))
     }
 
     /// Returns a single, mutable line inside this cell.
@@ -82,7 +85,7 @@ impl FancyCell {
     /// See [UnicodeWidthStr::width] for more information.
     pub fn get_width(&self) -> usize {
         self.content.iter()
-            .map(|line| line.width())
+            .map(|line| line.width() + 2 * self.padding)
             .max()
             .unwrap_or(0)
     }
@@ -91,8 +94,9 @@ impl FancyCell {
 impl Default for FancyCell {
     fn default() -> Self {
         FancyCell {
-            content: vec!["   ".to_string()],
+            content: vec![" ".to_string()],
             border_style: Default::default(),
+            padding: 1,
         }
     }
 }

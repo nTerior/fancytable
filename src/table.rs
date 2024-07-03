@@ -261,7 +261,9 @@ impl FancyTable {
                     if col_idx == 0 {
                         write!(f, "{}", symbols.1)?;
                     }
-                    write!(f, "{:width$}", cell.get_line(line).unwrap_or(&"".to_string()), width = widths[col_idx])?;
+
+                    let content = cell.get_line(line).unwrap_or(String::new());
+                    write!(f, "{content:width$}", width = widths[col_idx])?;
                     write!(f, "{}", symbols.2)?;
                 }
                 if line != height - 1 {
