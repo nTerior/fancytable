@@ -260,11 +260,13 @@ impl FancyTable {
                     }
 
                     let content = cell.get_line(line).unwrap_or(String::new());
-                    match cell.horizontal_alignment {
-                        Alignment::Left => write!(f, "{content:<width$}", width = widths[col_idx])?,
-                        Alignment::Right => write!(f, "{content:>width$}", width = widths[col_idx])?,
-                        Alignment::Center => write!(f, "{content:^width$}", width = widths[col_idx])?,
-                    }
+                    let aligned = match cell.horizontal_alignment {
+                        Alignment::Left => format!("{content:<width$}", width = widths[col_idx]),
+                        Alignment::Right => format!("{content:>width$}", width = widths[col_idx]),
+                        Alignment::Center => format!("{content:^width$}", width = widths[col_idx]),
+                    };
+                    let styled = cell.style.paint(&aligned);
+                    write!(f, "{styled}")?;
                     write!(f, "{}", symbols.2)?;
                 }
                 if line != height - 1 {

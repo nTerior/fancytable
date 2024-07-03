@@ -9,4 +9,4 @@ description = "Create customizable and pretty tables for terminal output"
 ansi_term = "0.12.1"
 textwrap = "0.16.1"
 unicode-width = "0.1.13"
-
+strip-ansi-escapes = "0.2.0"

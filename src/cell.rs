@@ -1,5 +1,6 @@
 use std::fmt::Alignment;
 use std::str::FromStr;
+use ansi_term::Style;
 use unicode_width::UnicodeWidthStr;
 use crate::style::border::{CellBorderStyle};
 
@@ -9,12 +10,13 @@ fn multiline_from_string(s: String) -> Vec<String> {
 }
 
 /// A single, stylizable cell used inside [FancyTable](crate::FancyTable)
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct FancyCell {
     content: Vec<String>,
     pub border_style: CellBorderStyle,
     pub padding: usize,
     pub horizontal_alignment: Alignment,
+    pub style: Style,
 }
 
 impl FancyCell {
@@ -57,13 +59,14 @@ impl FancyCell {
         self.content = multiline_from_string(content);
     }
 
-    /// Returns a single line inside this cell.
+    /// Returns a single formatted line inside this cell.
     ///
     /// Returns [None] if the line does not exist.
     pub fn get_line(&self, line: usize) -> Option<String> {
         let line = self.content.get(line)?;
         let empty = "";
-        Some(format!("{empty:width$}{line}{empty:width$}", width=self.padding))
+        let padded = format!("{empty:width$}{line}{empty:width$}", width=self.padding);
+        Some(padded)
     }
 
     /// Returns a single, mutable line inside this cell.
@@ -86,10 +89,20 @@ impl FancyCell {
     /// Returns the unicode column width of this cell.
     /// See [UnicodeWidthStr::width] for more information.
     pub fn get_width(&self) -> usize {
-        self.content.iter()
-            .map(|line| line.width() + 2 * self.padding)
+        let mut max = 0;
+        for i in 0..self.content.len() {
+            let unescaped_line = strip_ansi_escapes::strip_str(self.get_line(i).unwrap());
+            let width = unescaped_line.width();
+            if max < width {
+                max = width;
+            }
+        }
+        max
+
+        /*(0..self.content.len())
+            .map(|i| self.get_line(i).unwrap().width())
             .max()
-            .unwrap_or(0)
+            .unwrap_or(0)*/
     }
 }
 
@@ -99,10 +112,13 @@ impl Default for FancyCell {
             content: vec![" ".to_string()],
             border_style: Default::default(),
             padding: 1,
-            horizontal_alignment: Alignment::Left
+            horizontal_alignment: Alignment::Left,
+            style: Style::default(),
         }
     }
 }
+
+impl Eq for FancyCell {}
 
 impl From<String> for FancyCell {
     fn from(value: String) -> Self {
