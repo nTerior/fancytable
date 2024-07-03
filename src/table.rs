@@ -2,6 +2,7 @@ use std::cmp::max;
 use std::fmt::{Alignment, Display, Formatter};
 use crate::FancyCell;
 use crate::style::border::{BorderStyle, get_cell_border_symbols, get_common_cell_border_symbol};
+use crate::style::VerticalAlignment;
 
 /// A stylizable, rectangular table for pretty cli output.
 #[derive(Debug, Eq, PartialEq, Default)]
@@ -249,7 +250,7 @@ impl FancyTable {
 
     /// Writes a single row to the formatter
     fn write_row(&self, f: &mut Formatter<'_>, row_idx: usize, widths: &Vec<usize>) -> std::fmt::Result {
-        let height = self.get_row_height(row_idx);
+        let height: i64 = self.get_row_height(row_idx) as i64;
         if height > 0 {
             for line in 0..height {
                 for col_idx in 0..self.get_column_count() {
@@ -259,7 +260,22 @@ impl FancyTable {
                         write!(f, "{}", symbols.1)?;
                     }
 
-                    let content = cell.get_line(line).unwrap_or(String::new());
+                    // vertical alignment
+                    let current_line: i64 = match cell.vertical_alignment {
+                        VerticalAlignment::Top => line,
+                        VerticalAlignment::Center => {
+                            line - (height - cell.get_height() as i64) / 2
+                        }
+                        VerticalAlignment::Bottom => {
+                            line - height + cell.get_height() as i64
+                        }
+                    };
+
+                    let content = match current_line {
+                        neg if neg < 0 => String::new(),
+                        line => cell.get_line(line as usize).unwrap_or(String::new()),
+                    };
+
                     let aligned = match cell.horizontal_alignment {
                         Alignment::Left => format!("{content:<width$}", width = widths[col_idx]),
                         Alignment::Right => format!("{content:>width$}", width = widths[col_idx]),

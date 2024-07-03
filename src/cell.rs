@@ -115,6 +115,7 @@ impl Default for FancyCell {
             border_style: Default::default(),
             padding: 1,
             horizontal_alignment: Alignment::Left,
+            vertical_alignment: VerticalAlignment::default(),
             style: Style::default(),
         }
     }
