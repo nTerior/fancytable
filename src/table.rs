@@ -1,6 +1,7 @@
 use std::cmp::max;
+use std::fmt::{Display, Formatter};
 use crate::FancyCell;
-use crate::style::border::BorderStyle;
+use crate::style::border::{BorderStyle, get_cell_border_symbols, get_common_cell_border_symbol};
 
 /// A stylizable, rectangular table for pretty cli output.
 #[derive(Debug, Eq, PartialEq, Default)]
@@ -141,11 +142,29 @@ impl FancyTable {
         edited
     }
 
-    /// Returns a reference to the [FancyCell] at the position (row_idx, col_idx) in the table
-    /// Returns None if not found
+    /// Returns a reference to the [FancyCell] at the position (row_idx, col_idx)
+    /// Returns [None] if not found
     pub fn get(&self, row_idx: usize, col_idx: usize) -> Option<&FancyCell> {
         let row = self.cells.get(row_idx)?;
         row.get(col_idx)
+    }
+
+    /// Returns a reference to the [FancyCell] at the(row_idx, col_idx) or [None] if not found
+    /// Returns [None] if any variable is negative
+    pub fn get_cell(&self, row: i64, col: i64) -> Option<&FancyCell> {
+        if row < 0 || col < 0 {
+            None
+        } else {
+            self.get(row as usize, col as usize)
+        }
+    }
+
+    /// Returns the maximum height of a given row
+    pub fn get_row_height(&self, row_idx: usize) -> usize {
+        self.cells[row_idx].iter()
+            .map(|cell| cell.get_height())
+            .max()
+            .unwrap_or(0)
     }
 
     /// Returns a mutable reference to the [FancyCell] at the position (row_idx, col_idx) in the table
@@ -170,13 +189,13 @@ impl FancyTable {
     }
 
     /// Returns the style for a single vertical separator (not the outline)
-    pub fn get_vertical_separator_style(&self, idx: usize) -> &BorderStyle {
-        &self.vertical_separator_styles[idx]
+    pub fn get_vertical_separator_style(&self, idx: usize) -> Option<&BorderStyle> {
+        self.vertical_separator_styles.get(idx)
     }
 
     /// Returns the style for a single horizontal separator (not the outline)
-    pub fn get_horizontal_separator_style(&self, idx: usize) -> &BorderStyle {
-        &self.horizontal_separator_styles[idx]
+    pub fn get_horizontal_separator_style(&self, idx: usize) -> Option<&BorderStyle> {
+        self.horizontal_separator_styles.get(idx)
     }
 
     /// Sets the style for a vertical separator (not the outline).
@@ -204,5 +223,77 @@ impl FancyTable {
         }
 
         widths
+    }
+
+    /// Writes the top border of a single row to the formatter
+    fn write_top_border(&self, f: &mut Formatter<'_>, row_idx: usize, widths: &Vec<usize>) -> std::fmt::Result {
+        for col_idx in 0..(self.get_column_count() + 1) {
+            let cell = self.get(row_idx, col_idx);
+            let top_left = self.get_cell(row_idx as i64 - 1, col_idx as i64 - 1);
+            let top_right = self.get_cell(row_idx as i64 - 1, col_idx as i64);
+            let left = self.get_cell(row_idx as i64, col_idx as i64 - 1);
+
+            let default_style = BorderStyle::default();
+            let hor_style = self.get_horizontal_separator_style(row_idx).unwrap_or(&default_style);
+            let vert_style = self.get_vertical_separator_style(col_idx).unwrap_or(&default_style);
+            // cell corner symbol
+            write!(f, "{}", get_common_cell_border_symbol(top_left, top_right, left, cell, hor_style.clone(), vert_style.clone()))?;
+
+            // top border
+            if col_idx == self.get_column_count() {
+                continue;
+            }
+            for _ in 0..widths[col_idx] {
+                write!(f, "{}", get_cell_border_symbols(self, row_idx, col_idx).0)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Writes a single row to the formatter
+    fn write_row(&self, f: &mut Formatter<'_>, row_idx: usize, widths: &Vec<usize>) -> std::fmt::Result {
+        let height = self.get_row_height(row_idx);
+        if height > 0 {
+            for line in 0..height {
+                for col_idx in 0..self.get_column_count() {
+                    let cell = self.get(row_idx, col_idx).unwrap();
+                    let symbols = get_cell_border_symbols(self, row_idx, col_idx);
+                    if col_idx == 0 {
+                        write!(f, "{}", symbols.1)?;
+                    }
+                    write!(f, "{:width$}", cell.get_line(line).unwrap_or(&"".to_string()), width = widths[col_idx])?;
+                    write!(f, "{}", symbols.2)?;
+                }
+                if line != height - 1 {
+                    writeln!(f)?;
+                }
+            }
+            writeln!(f)?;
+        }
+        Ok(())
+    }
+}
+
+impl Display for FancyTable {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        // capture empty tables
+        if self.get_column_count() < 1 || self.get_row_count() < 1 {
+            write!(f, "")?;
+            return Ok(());
+        }
+
+        let widths = self.get_col_widths();
+        for row_idx in 0..(self.get_row_count() + 1) {
+            self.write_top_border(f, row_idx, &widths)?;
+
+            if row_idx == self.get_row_count() {
+                continue;
+            }
+
+            writeln!(f)?;
+            self.write_row(f, row_idx, &widths)?;
+        }
+
+        Ok(())
     }
 }

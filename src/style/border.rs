@@ -58,28 +58,33 @@ fn get_vertical_symbol(line: &BorderLineStyle, style: &BorderStyle) -> String {
     }.to_string()
 }
 
+/// Returns border symbols of the given cell in order: top, left, right, bottom
 pub fn get_cell_border_symbols(table: &FancyTable, cell_row: usize, cell_col: usize) -> (String, String, String, String) {
-    let cell = table.get(cell_row, cell_col).unwrap_or(&FancyCell::default());
-    let top = match cell_row - 1 {
-        i if i < 0 => None,
-        i => table.get(i, cell_col),
-    }.unwrap_or(&FancyCell::default());
-    let left = match cell_col - 1 {
-        i if i < 0 => None,
-        i => table.get(cell_row, i),
-    }.unwrap_or(&FancyCell::default());
-    let right = table.get(cell_row, cell_col + 1).unwrap_or(&FancyCell::default());
-    let bottom = table.get(cell_row + 1, cell_col).unwrap_or(&FancyCell::default());
+    let row = cell_row as i64;
+    let col = cell_col as i64;
 
-    let top_hor_style = table.get_horizontal_separator_style(cell_row);
-    let bottom_hor_style = table.get_horizontal_separator_style(cell_row + 1);
-    let left_vert_style = table.get_vertical_separator_style(cell_col);
-    let right_vert_style = table.get_vertical_separator_style(cell_col + 1);
+    let default_cell = FancyCell::default();
 
-    let top_symbol = get_horizontal_symbol(&cell.border_style.top.max(top.border_style.bottom), top_hor_style);
-    let bottom_symbol = get_horizontal_symbol(&cell.border_style.bottom.max(bottom.border_style.top), bottom_hor_style);
-    let left_symbol = get_vertical_symbol(&cell.border_style.left.max(left.border_style.right), left_vert_style);
-    let right_symbol = get_vertical_symbol(&cell.border_style.right.max(right.border_style.left), right_vert_style);
+    let cell_style = table.get(cell_row, cell_col).unwrap_or(&default_cell).border_style;
+
+    // neighbour cells
+    let top_style = table.get_cell(row - 1, col).unwrap_or(&default_cell).border_style;
+    let left_style = table.get_cell(row, col - 1).unwrap_or(&default_cell).border_style;
+    let right_style = table.get(cell_row, cell_col + 1).unwrap_or(&default_cell).border_style;
+    let bottom_style = table.get(cell_row + 1, cell_col).unwrap_or(&default_cell).border_style;
+
+    let default_style = BorderStyle::default();
+    // separator styles
+    let top_hor_style = table.get_horizontal_separator_style(cell_row).unwrap_or(&default_style);
+    let bottom_hor_style = table.get_horizontal_separator_style(cell_row + 1).unwrap_or(&default_style);
+    let left_vert_style = table.get_vertical_separator_style(cell_col).unwrap_or(&default_style);
+    let right_vert_style = table.get_vertical_separator_style(cell_col + 1).unwrap_or(&default_style);
+
+    // separator symbols
+    let top_symbol = get_horizontal_symbol(&cell_style.top.max(top_style.bottom), top_hor_style);
+    let bottom_symbol = get_horizontal_symbol(&cell_style.bottom.max(bottom_style.top), bottom_hor_style);
+    let left_symbol = get_vertical_symbol(&cell_style.left.max(left_style.right), left_vert_style);
+    let right_symbol = get_vertical_symbol(&cell_style.right.max(right_style.left), right_vert_style);
 
     (top_symbol, left_symbol, right_symbol, bottom_symbol)
 }
@@ -107,10 +112,10 @@ fn get_center_symbol(top: bool, left: bool, right: bool, bottom: bool, hor_style
         (true, false, true, true) => style_based_selection(hor_style, vert_style, "├", "╞", "╨", "╟"),
         // right t (┤)
         (true, true, false, true) => style_based_selection(hor_style, vert_style, "┤", "╡", "╢", "╣"),
-        // horizontal line (─)
-        (true, false, false, true) => if hor_style == BorderStyle::Single { "─" } else { "═" }.into(),
         // vertical line (│)
-        (false, true, true, false) => if vert_style == BorderStyle::Single { "│" } else { "║" }.into(),
+        (false, true, true, false) => if hor_style == BorderStyle::Single { "─" } else { "═" }.into(),
+        // horizontal line (─)
+        (true, false, false, true) => if vert_style == BorderStyle::Single { "│" } else { "║" }.into(),
         // corner (┌)
         (false, false, true, true) => style_based_selection(hor_style, vert_style, "┌", "╒", "╓", "╔"),
         // corner (┐)
@@ -133,21 +138,29 @@ fn get_center_symbol(top: bool, left: bool, right: bool, bottom: bool, hor_style
 pub fn get_common_cell_border_symbol(top_left: Option<&FancyCell>, top_right: Option<&FancyCell>, bottom_left: Option<&FancyCell>, bottom_right: Option<&FancyCell>, hor_style: BorderStyle, vert_style: BorderStyle) -> String {
     let top = match (top_left, top_right) {
         (Some(left), Some(right)) => left.border_style.right.max(right.border_style.left) != BorderLineStyle::None,
+        (Some(left), None) => left.border_style.right != BorderLineStyle::None,
+        (None, Some(right)) => right.border_style.left != BorderLineStyle::None,
         _ => false,
     };
 
-    let left = match (top_left, bottom_right) {
+    let left = match (top_left, bottom_left) {
         (Some(top), Some(bot)) => top.border_style.bottom.max(bot.border_style.top) != BorderLineStyle::None,
+        (Some(top), None) => top.border_style.bottom != BorderLineStyle::None,
+        (None, Some(bot)) => bot.border_style.top != BorderLineStyle::None,
         _ => false,
     };
 
     let right = match (top_right, bottom_right) {
         (Some(top), Some(bot)) => top.border_style.bottom.max(bot.border_style.top) != BorderLineStyle::None,
+        (Some(top), None) => top.border_style.bottom != BorderLineStyle::None,
+        (None, Some(bot)) => bot.border_style.top != BorderLineStyle::None,
         _ => false,
     };
 
     let bottom = match (bottom_left, bottom_right) {
         (Some(left), Some(right)) => left.border_style.right.max(right.border_style.left) != BorderLineStyle::None,
+        (Some(left), None) => left.border_style.right != BorderLineStyle::None,
+        (None, Some(right)) => right.border_style.left != BorderLineStyle::None,
         _ => false,
     };
 

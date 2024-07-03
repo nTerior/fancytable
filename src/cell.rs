@@ -8,7 +8,7 @@ fn multiline_from_string(s: String) -> Vec<String> {
 }
 
 /// A single, stylizable cell used inside [FancyTable](crate::FancyTable)
-#[derive(Debug, Eq, PartialEq, Default, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct FancyCell {
     content: Vec<String>,
     pub border_style: CellBorderStyle,
@@ -85,6 +85,15 @@ impl FancyCell {
             .map(|line| line.width())
             .max()
             .unwrap_or(0)
+    }
+}
+
+impl Default for FancyCell {
+    fn default() -> Self {
+        FancyCell {
+            content: vec!["   ".to_string()],
+            border_style: Default::default(),
+        }
     }
 }
 
