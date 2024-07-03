@@ -3,6 +3,7 @@ use std::str::FromStr;
 use ansi_term::Style;
 use unicode_width::UnicodeWidthStr;
 use crate::style::border::{CellBorderStyle};
+use crate::style::VerticalAlignment;
 
 /// Splits the input into separate lines and returns them inside a [Vec]
 fn multiline_from_string(s: String) -> Vec<String> {
@@ -16,6 +17,7 @@ pub struct FancyCell {
     pub border_style: CellBorderStyle,
     pub padding: usize,
     pub horizontal_alignment: Alignment,
+    pub vertical_alignment: VerticalAlignment,
     pub style: Style,
 }
 
@@ -59,7 +61,7 @@ impl FancyCell {
         self.content = multiline_from_string(content);
     }
 
-    /// Returns a single formatted line inside this cell.
+    /// Returns a single padded line inside this cell.
     ///
     /// Returns [None] if the line does not exist.
     pub fn get_line(&self, line: usize) -> Option<String> {
