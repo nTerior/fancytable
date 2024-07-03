@@ -1,3 +1,4 @@
+use std::fmt::Alignment;
 use std::str::FromStr;
 use unicode_width::UnicodeWidthStr;
 use crate::style::border::{CellBorderStyle};
@@ -13,6 +14,7 @@ pub struct FancyCell {
     content: Vec<String>,
     pub border_style: CellBorderStyle,
     pub padding: usize,
+    pub horizontal_alignment: Alignment,
 }
 
 impl FancyCell {
@@ -97,6 +99,7 @@ impl Default for FancyCell {
             content: vec![" ".to_string()],
             border_style: Default::default(),
             padding: 1,
+            horizontal_alignment: Alignment::Left
         }
     }
 }

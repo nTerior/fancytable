@@ -1,5 +1,5 @@
 use std::cmp::max;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Alignment, Display, Formatter};
 use crate::FancyCell;
 use crate::style::border::{BorderStyle, get_cell_border_symbols, get_common_cell_border_symbol};
 
@@ -119,7 +119,7 @@ impl FancyTable {
     /// Sets the cell at a specified position starting at (0, 0)
     /// Will create rows and columns dynamically if needed.
     ///
-    /// Returns whether rows or columns have been created
+    /// Returns a mut ref to the cell
     ///
     /// # Example
     /// ```
@@ -127,19 +127,16 @@ impl FancyTable {
     /// let mut table = FancyTable::default(); // Empty table
     /// table.set(5, 5, "Hello World".into()); // creates 6 rows and 6 columns
     /// ```
-    pub fn set(&mut self, row_idx: usize, col_idx: usize, cell: FancyCell) -> bool {
-        let mut edited = false;
+    pub fn set(&mut self, row_idx: usize, col_idx: usize, cell: FancyCell) -> &mut FancyCell {
         if row_idx >= self.cells.len() {
             self.add_rows(row_idx - self.cells.len() + 1);
-            edited = true;
         }
         if col_idx >= self.cells[row_idx].len() {
             self.add_columns(col_idx - self.cells[row_idx].len() + 1);
-            edited = true;
         }
 
         self.cells[row_idx][col_idx] = cell;
-        edited
+        &mut self.cells[row_idx][col_idx]
     }
 
     /// Returns a reference to the [FancyCell] at the position (row_idx, col_idx)
@@ -263,7 +260,11 @@ impl FancyTable {
                     }
 
                     let content = cell.get_line(line).unwrap_or(String::new());
-                    write!(f, "{content:width$}", width = widths[col_idx])?;
+                    match cell.horizontal_alignment {
+                        Alignment::Left => write!(f, "{content:<width$}", width = widths[col_idx])?,
+                        Alignment::Right => write!(f, "{content:>width$}", width = widths[col_idx])?,
+                        Alignment::Center => write!(f, "{content:^width$}", width = widths[col_idx])?,
+                    }
                     write!(f, "{}", symbols.2)?;
                 }
                 if line != height - 1 {
