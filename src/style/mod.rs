@@ -7,3 +7,10 @@ pub enum VerticalAlignment {
     Center,
     Bottom
 }
+
+#[derive(Debug, Eq, PartialEq, Copy, Clone, Default)]
+pub enum ColumnWidth {
+    #[default]
+    Dynamic,
+    Fixed(usize),
+}

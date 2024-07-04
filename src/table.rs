@@ -2,20 +2,23 @@ use std::cmp::max;
 use std::fmt::{Alignment, Display, Formatter};
 use crate::FancyCell;
 use crate::style::border::{BorderStyle, get_cell_border_symbols, get_common_cell_border_symbol};
-use crate::style::VerticalAlignment;
+use crate::style::{ColumnWidth, VerticalAlignment};
 
 /// A stylizable, rectangular table for pretty cli output.
-#[derive(Debug, Eq, PartialEq, Default)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct FancyTable {
     /// Access: `cells[row][col]`
     cells: Vec<Vec<FancyCell>>,
-    /// Set when adding a column to an empty table, so that a call on [FancyTable::add_rows] creates the correct result
-    /// ONLY FOR INTERNAL USE!
-    _added_column_first: bool,
+    /// Fixes the column width, padding of cells will be set to 1
+    column_widths: Vec<ColumnWidth>,
     /// The vertical separators + borders
     vertical_separator_styles: Vec<BorderStyle>,
     /// The horizontal separators + border
     horizontal_separator_styles: Vec<BorderStyle>,
+    /// Width settings for columns
+    /// Set when adding a column to an empty table, so that a call on [FancyTable::add_rows] creates the correct result
+    /// ONLY FOR INTERNAL USE!
+    _added_column_first: bool,
 }
 
 impl FancyTable {
@@ -59,6 +62,7 @@ impl FancyTable {
         let horizontal_separators: usize = max(cells.len() + 1, 2);
 
         FancyTable {
+            column_widths: vec![ColumnWidth::default(); columns],
             vertical_separator_styles: vec![BorderStyle::default(); vertical_separators],
             horizontal_separator_styles: vec![BorderStyle::default(); horizontal_separators],
             _added_column_first: false,
@@ -114,6 +118,7 @@ impl FancyTable {
                 row.push(FancyCell::default());
             }
             self.vertical_separator_styles.push(BorderStyle::default());
+            self.column_widths.push(ColumnWidth::default());
         }
     }
 
@@ -160,7 +165,8 @@ impl FancyTable {
     /// Returns the maximum height of a given row
     pub fn get_row_height(&self, row_idx: usize) -> usize {
         self.cells[row_idx].iter()
-            .map(|cell| cell.get_height())
+            .enumerate()
+            .map(|(col, cell)| cell.get_height(self.column_widths[col]))
             .max()
             .unwrap_or(0)
     }
@@ -205,6 +211,12 @@ impl FancyTable {
     pub fn set_horizontal_separator_style(&mut self, idx: usize, style: BorderStyle) {
         self.horizontal_separator_styles[idx] = style;
     }
+
+    /// Sets the width for an entire column.
+    /// When printing, the padding of cells will be ignored and set to exactly 1
+    pub fn set_column_width(&mut self, column: usize, column_width: ColumnWidth) {
+        self.column_widths[column] = column_width;
+    }
 }
 
 impl FancyTable {
@@ -214,7 +226,7 @@ impl FancyTable {
 
         for i in 0..columns {
             let width = self.cells.iter()
-                .map(|row| row[i].get_width())
+                .map(|row| row[i].get_width(self.column_widths[i]))
                 .max()
                 .unwrap_or(0);
             widths.push(width);
@@ -264,16 +276,16 @@ impl FancyTable {
                     let current_line: i64 = match cell.vertical_alignment {
                         VerticalAlignment::Top => line,
                         VerticalAlignment::Center => {
-                            line - (height - cell.get_height() as i64) / 2
+                            line - (height - cell.get_height(self.column_widths[col_idx]) as i64) / 2
                         }
                         VerticalAlignment::Bottom => {
-                            line - height + cell.get_height() as i64
+                            line - height + cell.get_height(self.column_widths[col_idx]) as i64
                         }
                     };
 
                     let content = match current_line {
                         neg if neg < 0 => String::new(),
-                        line => cell.get_line(line as usize).unwrap_or(String::new()),
+                        line => cell.get_line(line as usize, self.column_widths[col_idx]).unwrap_or(String::new()),
                     };
 
                     let aligned = match cell.horizontal_alignment {
@@ -299,7 +311,6 @@ impl Display for FancyTable {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         // capture empty tables
         if self.get_column_count() < 1 || self.get_row_count() < 1 {
-            write!(f, "")?;
             return Ok(());
         }
 
@@ -316,5 +327,12 @@ impl Display for FancyTable {
         }
 
         Ok(())
+    }
+}
+
+impl Default for FancyTable {
+    fn default() -> Self {
+        // ToDo: create new constructor from Vec<Vec<FancyCell>>
+        FancyTable::new(vec![vec!["".into()]])
     }
 }

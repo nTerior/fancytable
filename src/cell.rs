@@ -3,7 +3,7 @@ use std::str::FromStr;
 use ansi_term::Style;
 use unicode_width::UnicodeWidthStr;
 use crate::style::border::{CellBorderStyle};
-use crate::style::VerticalAlignment;
+use crate::style::{ColumnWidth, VerticalAlignment};
 
 /// Splits the input into separate lines and returns them inside a [Vec]
 fn multiline_from_string(s: String) -> Vec<String> {
@@ -61,16 +61,6 @@ impl FancyCell {
         self.content = multiline_from_string(content);
     }
 
-    /// Returns a single padded line inside this cell.
-    ///
-    /// Returns [None] if the line does not exist.
-    pub fn get_line(&self, line: usize) -> Option<String> {
-        let line = self.content.get(line)?;
-        let empty = "";
-        let padded = format!("{empty:width$}{line}{empty:width$}", width=self.padding);
-        Some(padded)
-    }
-
     /// Returns a single, mutable line inside this cell.
     ///
     /// Returns [None] if the line does not exist.
@@ -84,18 +74,55 @@ impl FancyCell {
     }
 
     /// Returns the height of the cell in lines.
-    pub fn get_height(&self) -> usize {
-        self.content.len()
+    pub fn get_height(&self, dynamic_width: ColumnWidth) -> usize {
+        match dynamic_width {
+            ColumnWidth::Dynamic => self.content.len(),
+            ColumnWidth::Fixed(w) => self.get_lines_with_fixed_width(w).len()
+        }
     }
 
     /// Returns the unicode column width of this cell.
     /// See [UnicodeWidthStr::width] for more information.
-    pub fn get_width(&self) -> usize {
+    pub fn get_width(&self, dynamic_width: ColumnWidth) -> usize {
+        if let ColumnWidth::Fixed(w) = dynamic_width {
+            return w + 2;
+        }
+
         (0..self.content.len())
-            .map(|i| strip_ansi_escapes::strip_str(self.get_line(i).unwrap()))
+            .map(|i| strip_ansi_escapes::strip_str(self.get_line(i, dynamic_width).unwrap()))
             .map(|s| s.width())
             .max()
             .unwrap_or(0)
+    }
+
+    /// Returns a single padded line inside this cell.
+    ///
+    /// Returns [None] if the line does not exist.
+    pub fn get_line(&self, line: usize, width: ColumnWidth) -> Option<String> {
+        let line = match width {
+            ColumnWidth::Dynamic => self.content.get(line)?.clone(),
+            ColumnWidth::Fixed(w) => self.get_lines_with_fixed_width(w).get(line)?.clone(),
+        };
+
+        let empty = "";
+        let padding = match width {
+            ColumnWidth::Dynamic => self.padding,
+            ColumnWidth::Fixed(_) => 1,
+        };
+        let padded = format!("{empty:width$}{line}{empty:width$}", width = padding);
+        Some(padded)
+    }
+
+    pub fn get_lines_with_fixed_width(&self, width: usize) -> Vec<String> {
+        let mut content: Vec<String> = Vec::new();
+
+        for line in &self.content {
+            let wrapped = textwrap::wrap(line.as_str(), width);
+            let mut wrapped: Vec<String> = wrapped.iter().map(|l| l.to_string()).collect();
+            content.append(&mut wrapped);
+        }
+
+        content
     }
 }
 
