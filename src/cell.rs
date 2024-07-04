@@ -91,20 +91,11 @@ impl FancyCell {
     /// Returns the unicode column width of this cell.
     /// See [UnicodeWidthStr::width] for more information.
     pub fn get_width(&self) -> usize {
-        let mut max = 0;
-        for i in 0..self.content.len() {
-            let unescaped_line = strip_ansi_escapes::strip_str(self.get_line(i).unwrap());
-            let width = unescaped_line.width();
-            if max < width {
-                max = width;
-            }
-        }
-        max
-
-        /*(0..self.content.len())
-            .map(|i| self.get_line(i).unwrap().width())
+        (0..self.content.len())
+            .map(|i| strip_ansi_escapes::strip_str(self.get_line(i).unwrap()))
+            .map(|s| s.width())
             .max()
-            .unwrap_or(0)*/
+            .unwrap_or(0)
     }
 }
 
