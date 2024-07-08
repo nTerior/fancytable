@@ -22,26 +22,8 @@ pub struct FancyTable {
 }
 
 impl FancyTable {
-    /// Creates a new table from a 2d-field of string
-    /// The strings will be converted to [FancyCell]s
-    /// Also, every row will have the same amount of columns after initialization
-    /// # Example
-    /// ```
-    /// use fancytable::FancyTable;
-    /// let table = FancyTable::new(vec![
-    ///     vec!["Hello".into(), "World".into()],
-    ///     vec!["Lorem".into(), "Ipsum".into(), "dolor".into()],
-    /// ]);
-    /// ```
-    pub fn new(content: Vec<Vec<String>>) -> FancyTable {
-        // converts the strings into cells
-        let mut cells: Vec<Vec<FancyCell>> = content.iter()
-            .map(|row| row.iter()
-                .map(String::from)
-                .map(FancyCell::from)
-                .collect::<Vec<FancyCell>>())
-            .collect();
-
+    /// Creates a table from a 2d array of [FancyCell]s
+    pub fn create(mut cells: Vec<Vec<FancyCell>>) -> FancyTable {
         // gets the maximum number of columns in all rows
         let columns = cells.iter()
             .map(|row| row.len())
@@ -68,6 +50,29 @@ impl FancyTable {
             _added_column_first: false,
             cells,
         }
+    }
+
+    /// Creates a new table from a 2d-field of string
+    /// The strings will be converted to [FancyCell]s
+    /// Also, every row will have the same amount of columns after initialization
+    /// # Example
+    /// ```
+    /// use fancytable::FancyTable;
+    /// let table = FancyTable::new(vec![
+    ///     vec!["Hello".into(), "World".into()],
+    ///     vec!["Lorem".into(), "Ipsum".into(), "dolor".into()],
+    /// ]);
+    /// ```
+    pub fn new(content: Vec<Vec<String>>) -> FancyTable {
+        // converts the strings into cells
+        let cells: Vec<Vec<FancyCell>> = content.iter()
+            .map(|row| row.iter()
+                .map(String::from)
+                .map(FancyCell::from)
+                .collect::<Vec<FancyCell>>())
+            .collect();
+
+        FancyTable::create(cells)
     }
 
     /// Adds a number of rows.
@@ -332,7 +337,27 @@ impl Display for FancyTable {
 
 impl Default for FancyTable {
     fn default() -> Self {
-        // ToDo: create new constructor from Vec<Vec<FancyCell>>
         FancyTable::new(vec![vec!["".into()]])
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use std::fmt::Alignment;
+    use ansi_term::Color::{Black, Blue, Green, Red, White};
+    use ansi_term::{Colour, Style};
+    use crate::FancyTable;
+    use crate::style::border::{BorderLineStyle, BorderStyle};
+    use crate::style::{ColumnWidth, VerticalAlignment};
+
+    #[test]
+    fn a() {
+        let mut table = FancyTable::default();
+        table.set(3, 2, "a\nb\nc".into());
+        let cell = table.set(2, 3, "asdasdasdasdasdasd".into());
+        cell.padding = 0;
+        let cell = table.set(3, 3, "Hallo asdasdasd\nMeine\nWelt\nlorem\nipsum\ndolor\nsit".into());
+        println!("{}", table);
     }
 }
