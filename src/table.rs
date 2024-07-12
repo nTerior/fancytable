@@ -340,24 +340,3 @@ impl Default for FancyTable {
         FancyTable::new(vec![vec!["".into()]])
     }
 }
-
-
-#[cfg(test)]
-mod tests {
-    use std::fmt::Alignment;
-    use ansi_term::Color::{Black, Blue, Green, Red, White};
-    use ansi_term::{Colour, Style};
-    use crate::FancyTable;
-    use crate::style::border::{BorderLineStyle, BorderStyle};
-    use crate::style::{ColumnWidth, VerticalAlignment};
-
-    #[test]
-    fn a() {
-        let mut table = FancyTable::default();
-        table.set(3, 2, "a\nb\nc".into());
-        let cell = table.set(2, 3, "asdasdasdasdasdasd".into());
-        cell.padding = 0;
-        let cell = table.set(3, 3, "Hallo asdasdasd\nMeine\nWelt\nlorem\nipsum\ndolor\nsit".into());
-        println!("{}", table);
-    }
-}
